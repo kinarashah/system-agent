@@ -88,6 +88,7 @@ type File struct {
 	GID         int    `json:"gid,omitempty"`
 	Path        string `json:"path,omitempty"`
 	Permissions string `json:"permissions,omitempty"` // internally, the string will be converted to a uint32 to satisfy os.FileMode
+	Delete      bool   `json:"delete,omitempty"`
 }
 
 const appliedPlanFileSuffix = "-applied.plan"
@@ -238,6 +239,13 @@ func (a *Applyinator) Apply(ctx context.Context, input ApplyInput) (ApplyOutput,
 					return output, err
 				}
 			} else {
+				if file.Delete {
+					logrus.Debugf("[Applyinator] Deleting file %s", file.Path)
+					if err := os.RemoveAll(file.Path); err != nil {
+						return output, err
+					}
+					continue
+				}
 				logrus.Debugf("[Applyinator] Writing file %s", file.Path)
 				if err := writeBase64ContentToFile(file); err != nil {
 					return output, err
